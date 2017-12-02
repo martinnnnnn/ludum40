@@ -2,15 +2,39 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Loot : MonoBehaviour {
 
-	// Use this for initialization
-	void Start () {
+public enum LootType
+{
+    ARMOR,
+    GOLD
+}
+
+
+
+public class Loot : MonoBehaviour
+{
+
+
+    public LootType Type;
+    public int Value;
+
+    void Start ()
+    {
 		
 	}
 	
-	// Update is called once per frame
-	void Update () {
+	void Update ()
+    {
 		
 	}
+
+    private void OnTriggerEnter(Collider other)
+    {
+        Hero hero = other.GetComponent<Hero>();
+        if (hero)
+        {
+            hero.ReceiveLoot(this);
+        }
+        Destroy(gameObject);
+    }
 }
