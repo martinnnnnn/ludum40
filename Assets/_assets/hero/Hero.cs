@@ -1,7 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using Dweiss;
 
 public class Hero : MonoBehaviour
 {
@@ -11,6 +10,7 @@ public class Hero : MonoBehaviour
     private Rigidbody _body;
     private float XDirection;
     private float ZDirection;
+    private bool _movable;
 
 
     [Header("Loot")]
@@ -18,16 +18,23 @@ public class Hero : MonoBehaviour
     public int Gold;
     public GameObject[] Armor;
 
+    [Header("Throwing")]
+    public ThrowerTarget Target;
+    public float ReachTime = 2f;
+
+    private int _maxLife;
     private List<GameObject> unactivatedArmor;
     private List<GameObject> activatedArmor;
 
+    Thrower _thrower;
 
-    private int _maxLife;
+    public System.Action OnLootChange;
 
 	void Start ()
     {
+        _movable = true;
         _body = GetComponent<Rigidbody>();
-
+        _thrower = GetComponent<Thrower>();
         Reset();
     }
 	
@@ -35,22 +42,27 @@ public class Hero : MonoBehaviour
     {
         XDirection = Input.GetAxis("Horizontal");
         ZDirection = Input.GetAxis("Vertical");
-
-       
-
-        if (Input.GetButtonDown("Fire1"))
-        {
-            RemoveArmor();
-        }
     }
 
     private void FixedUpdate()
     {
-        _body.velocity = new Vector3(XDirection * Time.deltaTime * Speed, _body.velocity.y, ZDirection * Time.deltaTime * Speed);
+        if (_movable)
+        {
+            _body.velocity = new Vector3(XDirection * Time.deltaTime * Speed, _body.velocity.y, ZDirection * Time.deltaTime * Speed);
+        }
+        else
+        {
+            _body.velocity = Vector3.zero;
+        }
 
         if (XDirection != 0 && ZDirection != 0)
         {
             transform.eulerAngles = new Vector3(0, -Mathf.Atan2(XDirection, -ZDirection) * 180 / Mathf.PI, 0);
+        }
+
+        if (!_movable)
+        {
+            transform.LookAt(Target.transform.position);
         }
     }
 
@@ -77,16 +89,27 @@ public class Hero : MonoBehaviour
             obj.SetActive(true);
             activatedArmor.Add(obj);
             unactivatedArmor.Remove(obj);
-
-            //int rand = Random.Range(0, Armor.Length);
-            //while (Armor[rand].activeSelf)
-            //{
-            //    rand = Random.Range(0, Armor.Length);
-            //}
-            //Armor[rand].SetActive(true);
         }
-        
     }
+
+    public void ThrowArmor()
+    {
+        if (Life > 0)
+        {
+            string armorname = ReceiveDamage(1);
+            _thrower.Throw(armorname);
+        }
+    }
+
+    public void ThrowGold()
+    {
+        if (Gold > 0)
+        {
+            Gold--;
+            _thrower.Throw("gold");
+        }
+    }
+
 
     public void RemoveArmor()
     {
@@ -96,8 +119,10 @@ public class Hero : MonoBehaviour
         }
     }
 
-    public void ReceiveDamage(int value)
+    public string ReceiveDamage(int value)
     {
+        string result = "";
+
         while (Life > 0 && value > 0)
         {
             value--;
@@ -107,18 +132,13 @@ public class Hero : MonoBehaviour
             obj.SetActive(false);
             unactivatedArmor.Add(obj);
             activatedArmor.Remove(obj);
-
-            //int rand = Random.Range(0, Armor.Length);
-            //while (!Armor[rand].activeSelf)
-            //{
-            //    rand = Random.Range(0, Armor.Length);
-            //}
-            //Armor[rand].SetActive(false);
+            result = obj.name;
         }
         if (value > 0)
         {
             Death();
         }
+        return result;
     }
 
     private void Death()
@@ -140,21 +160,8 @@ public class Hero : MonoBehaviour
         }
     }
 
-    //private void OnTriggerEnter(Collider other)
-    //{
-    //    Monster monster = other.GetComponent<Monster>();
-    //    if (monster)
-    //    {
-    //        monster.OnStartHearing(gameObject);
-    //    }
-    //}
-
-    //private void OnTriggerExit(Collider other)
-    //{
-    //    Monster monster = other.GetComponent<Monster>();
-    //    if (monster)
-    //    {
-    //        monster.OnEndHearing(gameObject);
-    //    }
-    //}
+    public void Movable(bool movable)
+    {
+        _movable = movable;
+    }
 }

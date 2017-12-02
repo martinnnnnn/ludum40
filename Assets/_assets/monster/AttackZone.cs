@@ -9,6 +9,9 @@ public class AttackZone : MonoBehaviour
     public float AttackDuration = 1f;
     private float currentAttackDuration;
 
+
+    public System.Action OnAttackEnd;
+
     void OnEnable()
     {
         currentAttackDuration = 0;
@@ -19,21 +22,27 @@ public class AttackZone : MonoBehaviour
         currentAttackDuration += Time.deltaTime;
         if (currentAttackDuration >= AttackDuration)
         {
-            Debug.Log("AttackEnd");
-            gameObject.SetActive(false);
+            AttackEnd();
         }
     }
 
     private void OnTriggerEnter(Collider other)
     {
-        Debug.Log("Attacking something");
 
         Hero hero = other.GetComponent<Hero>();
         if (hero)
         {
             hero.ReceiveDamage(Damage);
-            gameObject.SetActive(false);
+            AttackEnd();
         }
     }
+
+    private void AttackEnd()
+    {
+        OnAttackEnd();
+        gameObject.SetActive(false);
+    }
+
+
 }
 

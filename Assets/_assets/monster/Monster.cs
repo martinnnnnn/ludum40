@@ -24,6 +24,9 @@ public class Monster : MonoBehaviour {
     private GameObject _hero;
     private bool follow = false;
 
+    private bool isRecognized = false;
+
+
     void Start()
     {
         _startingPosition = transform.position;
@@ -36,6 +39,7 @@ public class Monster : MonoBehaviour {
             patrol = true;
         }
 
+        AttackZone.GetComponent<AttackZone>().OnAttackEnd += StartFollowAfterAttack;
         //_agent.destination = goal.position;
     }
 
@@ -49,16 +53,23 @@ public class Monster : MonoBehaviour {
 
     public void OnStartHearing(GameObject obj)
     {
+        if (isRecognized)
+            return;
+
         if (obj.GetComponent<Hero>())
         {
             _hero = obj;
+            _agent.isStopped = true;
         }
     }
 
     public void OnEndHearing(GameObject obj)
     {
+        if (isRecognized)
+            return;
         if (obj.GetComponent<Hero>() && currentRecognitionTime < RecognitionTime)
         {
+            _agent.isStopped = false;
             _hero = null;
         }
     }
@@ -81,37 +92,37 @@ public class Monster : MonoBehaviour {
 
     private void Patrol()
     {
+        if (!patrol)
+            return;
 
-        if (!_agent.pathPending && patrol)
+        if (!_agent.pathPending)
         {
             if (_agent.remainingDistance <= _agent.stoppingDistance)
             {
                 if (!_agent.hasPath || _agent.velocity.sqrMagnitude == 0f)
                 {
                     currentPathPoint = (currentPathPoint + 1) % PatrolPoints.Length;
-                    Debug.Log("new point " + (_startingPosition + PatrolPoints[currentPathPoint]));
                     _agent.destination = _startingPosition + PatrolPoints[currentPathPoint];
                 }
             }
         }
-
-        //if (patrol && !_agent.hasPath)
-        //{
-        //    currentPathPoint = (currentPathPoint + 1) % PatrolPoints.Length;
-        //    _agent.destination = _startingPosition + PatrolPoints[currentPathPoint];
-        //}
     }
 
     private void Recognition()
     {
-        if (_hero)
+        if (isRecognized)
+            return;
+
+        if (!_hero)
+            return;
+
+        currentRecognitionTime += Time.deltaTime;
+        if (currentRecognitionTime >= RecognitionTime)
         {
-            currentRecognitionTime += Time.deltaTime;
-            if (currentRecognitionTime >= RecognitionTime)
-            {
-                patrol = false;
-                follow = true;
-            }
+            isRecognized = true;
+            patrol = false;
+            follow = true;
+            _agent.isStopped = false;
         }
     }
 
@@ -119,29 +130,34 @@ public class Monster : MonoBehaviour {
     {
         if (follow)
         {
+            Debug.Log("followplayer" + _agent.isStopped);
+            _agent.destination = _hero.transform.position;
+
             if (currentAttackCooldown > 0)
             {
                 currentAttackCooldown -= Time.deltaTime;
             }
 
-            
             if (_agent.remainingDistance < DistanceToAttack && currentAttackCooldown <= 0)
             {
-                _agent.destination = transform.position;
+                Debug.Log("stop to attack");
+                _agent.isStopped = true;
                 currentAttackCooldown = AttackCooldown;
-                // TODO : change attack -> start anim and use anim callback to call attack
                 Invoke("Attack", 0.5f);
-                //Attack();
-            }
-            else
-            {
-                _agent.destination = _hero.transform.position;
+                // TODO : change attack -> start anim and use anim callback to call attack
             }
         }
     }
 
     private void Attack()
     {
+        transform.LookAt(_hero.transform.position);
+        Debug.Log("attack");
         AttackZone.SetActive(true);
+    }
+
+    private void StartFollowAfterAttack()
+    {
+        _agent.isStopped = false;
     }
 }

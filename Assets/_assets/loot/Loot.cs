@@ -34,7 +34,7 @@ public class Loot : MonoBehaviour
         if (hero)
         {
             hero.ReceiveLoot(this);
+            Destroy(gameObject);
         }
-        Destroy(gameObject);
     }
 }
