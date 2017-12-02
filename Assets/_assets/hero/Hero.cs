@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Dweiss;
 
 public class Hero : MonoBehaviour
 {
@@ -138,4 +139,22 @@ public class Hero : MonoBehaviour
             unactivatedArmor.Add(obj);
         }
     }
+
+    //private void OnTriggerEnter(Collider other)
+    //{
+    //    Monster monster = other.GetComponent<Monster>();
+    //    if (monster)
+    //    {
+    //        monster.OnStartHearing(gameObject);
+    //    }
+    //}
+
+    //private void OnTriggerExit(Collider other)
+    //{
+    //    Monster monster = other.GetComponent<Monster>();
+    //    if (monster)
+    //    {
+    //        monster.OnEndHearing(gameObject);
+    //    }
+    //}
 }
