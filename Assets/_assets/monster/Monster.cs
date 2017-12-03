@@ -3,11 +3,21 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
 
+
+public enum MonsterState
+{
+    IDLE,
+    PATROL,
+    RECOGNITION,
+    HEARING,
+    FOLLOW
+}
+
 public class Monster : MonoBehaviour {
 
 
     public Vector3[] PatrolPoints;
-    private bool patrol;
+
     private int currentPathPoint;
     private Vector3 _startingPosition;
 
@@ -19,59 +29,107 @@ public class Monster : MonoBehaviour {
     public float AttackCooldown = 2;
     public GameObject AttackZone;
 
+    public float HearDuration = 5f;
+
     private float currentAttackCooldown = 0;
     private float currentRecognitionTime = 0;
-    private GameObject _hero;
-    private bool follow = false;
+    private Hero _hero;
+    private SoundEmiter _emiter;
 
-    private bool isRecognized = false;
+    MonsterState State;
 
-
-    void Start()
+    void OnEnable()
     {
         _startingPosition = transform.position;
         _agent = GetComponent<NavMeshAgent>();
         AttackZone.SetActive(false);
-        patrol = false;
         currentPathPoint = -1;
+
+        State = MonsterState.IDLE;
         if (PatrolPoints.Length > 0)
         {
-            patrol = true;
+            State = MonsterState.PATROL;
         }
 
         AttackZone.GetComponent<AttackZone>().OnAttackEnd += StartFollowAfterAttack;
-        //_agent.destination = goal.position;
+        GetComponent<MeshRenderer>().material.color = Color.blue;
+        _hero = FindObjectOfType<LevelHandler>().Hero;
+        if (_hero) _emiter = _hero.GetComponentInChildren<SoundEmiter>();
     }
 
+    private void Start()
+    {
+        _startingPosition = transform.position;
+        _agent = GetComponent<NavMeshAgent>();
+        AttackZone.SetActive(false);
+        currentPathPoint = -1;
+
+        State = MonsterState.IDLE;
+        if (PatrolPoints.Length > 0)
+        {
+            State = MonsterState.PATROL;
+        }
+
+        AttackZone.GetComponent<AttackZone>().OnAttackEnd += StartFollowAfterAttack;
+        GetComponent<MeshRenderer>().material.color = Color.blue;
+        _hero = FindObjectOfType<LevelHandler>().Hero;
+        _emiter = _hero.GetComponentInChildren<SoundEmiter>();
+    }
+
+    public void HearObject(Throwable obj)
+    {
+        if (Vector3.Distance(obj.transform.position, transform.position) < obj.SoundRadius)
+        {
+            State = MonsterState.HEARING;
+            _agent.destination = obj.transform.position;
+        }
+    }
 
     void Update()
     {
-        Patrol();
-        Recognition();
-        FollowHero();
+        ListenHero();
+        switch (State)
+        {
+            case MonsterState.IDLE:
+                break;
+            case MonsterState.PATROL:
+                Patrol();
+                break;
+            case MonsterState.RECOGNITION:
+                Recognize();
+                break;
+            case MonsterState.HEARING:
+                Hear();
+                break;
+            case MonsterState.FOLLOW:
+                FollowHero();
+                break;
+        }
     }
 
-    public void OnStartHearing(GameObject obj)
+    public void ListenHero()
     {
-        if (isRecognized)
+        if (State == MonsterState.FOLLOW || State == MonsterState.HEARING)
             return;
+        
 
-        if (obj.GetComponent<Hero>())
+        if (Vector3.Distance(_emiter.transform.position,transform.position) < _emiter.SoundRadius && _emiter.IsEmitingSound)
         {
-            _hero = obj;
+            State = MonsterState.RECOGNITION;
+            GetComponent<MeshRenderer>().material.color = Color.yellow;
             _agent.isStopped = true;
         }
-    }
-
-    public void OnEndHearing(GameObject obj)
-    {
-        if (isRecognized)
-            return;
-        if (obj.GetComponent<Hero>() && currentRecognitionTime < RecognitionTime)
+        else
         {
-            _agent.isStopped = false;
-            _hero = null;
+            if (currentRecognitionTime < RecognitionTime)
+            {
+                State = MonsterState.PATROL;
+                GetComponent<MeshRenderer>().material.color = Color.blue;
+                _agent.isStopped = false;
+                currentRecognitionTime = 0;
+            }
         }
+
     }
 
     void OnDrawGizmosSelected()
@@ -92,9 +150,6 @@ public class Monster : MonoBehaviour {
 
     private void Patrol()
     {
-        if (!patrol)
-            return;
-
         if (!_agent.pathPending)
         {
             if (_agent.remainingDistance <= _agent.stoppingDistance)
@@ -108,51 +163,67 @@ public class Monster : MonoBehaviour {
         }
     }
 
-    private void Recognition()
+    private void Recognize()
     {
-        if (isRecognized)
-            return;
-
-        if (!_hero)
-            return;
-
         currentRecognitionTime += Time.deltaTime;
         if (currentRecognitionTime >= RecognitionTime)
         {
-            isRecognized = true;
-            patrol = false;
-            follow = true;
+            State = MonsterState.FOLLOW;
             _agent.isStopped = false;
+            GetComponent<MeshRenderer>().material.color = Color.red;
+        }
+    }
+
+    private void Hear()
+    {
+        if (!_agent.pathPending)
+        {
+            if (_agent.remainingDistance <= _agent.stoppingDistance)
+            {
+                if (!_agent.hasPath || _agent.velocity.sqrMagnitude == 0f)
+                {
+                    _agent.isStopped = true;
+                    Invoke("BackToPatrol", HearDuration);
+                }
+            }
+        }
+    }
+
+    private void BackToPatrol()
+    {
+        _agent.isStopped = false;
+        if (PatrolPoints.Length == 0)
+        {
+            State = MonsterState.IDLE;
+            _agent.destination = _startingPosition;
+        }
+        else
+        {
+            State = MonsterState.PATROL;
         }
     }
 
     private void FollowHero()
     {
-        if (follow)
+        _agent.destination = _hero.transform.position;
+
+        if (currentAttackCooldown > 0)
         {
-            Debug.Log("followplayer" + _agent.isStopped);
-            _agent.destination = _hero.transform.position;
+            currentAttackCooldown -= Time.deltaTime;
+        }
 
-            if (currentAttackCooldown > 0)
-            {
-                currentAttackCooldown -= Time.deltaTime;
-            }
-
-            if (_agent.remainingDistance < DistanceToAttack && currentAttackCooldown <= 0)
-            {
-                Debug.Log("stop to attack");
-                _agent.isStopped = true;
-                currentAttackCooldown = AttackCooldown;
-                Invoke("Attack", 0.5f);
-                // TODO : change attack -> start anim and use anim callback to call attack
-            }
+        if (_agent.remainingDistance < DistanceToAttack && currentAttackCooldown <= 0)
+        {
+            _agent.isStopped = true;
+            currentAttackCooldown = AttackCooldown;
+            Invoke("Attack", 0.5f);
+            // TODO : change attack -> start anim and use anim callback to call attack
         }
     }
 
     private void Attack()
     {
         transform.LookAt(_hero.transform.position);
-        Debug.Log("attack");
         AttackZone.SetActive(true);
     }
 

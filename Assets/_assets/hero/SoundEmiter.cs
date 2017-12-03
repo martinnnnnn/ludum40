@@ -4,45 +4,57 @@ using UnityEngine;
 
 public class SoundEmiter : MonoBehaviour
 {
-
+    [Header("Sound Radius")]
+    public float SoundRadius;
     public float InitialRadius = 2;
     public float ArmorRaduis = 2;
     public float GoldRadius = 1;
 
-    private float currentRadius;
+    public GameObject RippleEffect;
+    private ParticleSystem _particles;
 
     private Hero _hero;
-    
+    private Rigidbody _heroBody;
+
+    public bool IsEmitingSound;
 
     private void Start()
     {
         _hero = GetComponentInParent<Hero>();
+        _heroBody = _hero.GetComponent<Rigidbody>();
         _hero.OnLootChange += OnRadiusChange;
+        _particles = RippleEffect.GetComponent<ParticleSystem>();
+        SoundRadius = InitialRadius;
+        RippleEffect.transform.localScale = new Vector3(SoundRadius, SoundRadius, SoundRadius);
+    }
+
+    private void Update()
+    {
+        if (_heroBody.velocity.magnitude > 0.1f)
+        {
+            if (!_particles.isPlaying) _particles.Play();
+            IsEmitingSound = true;
+        }
+        else
+        {
+            if (_particles.isPlaying) _particles.Stop(false, ParticleSystemStopBehavior.StopEmitting);
+            IsEmitingSound = false;
+        }
     }
 
     void OnRadiusChange()
     {
-        currentRadius = InitialRadius;
-        currentRadius += ArmorRaduis * _hero.Armor.Length;
-        currentRadius += GoldRadius * _hero.Gold;
-    }
-    
-
-    private void OnTriggerEnter(Collider other)
-    {
-        Monster monster = other.GetComponent<Monster>();
-        if (monster)
-        {
-            monster.OnStartHearing(_hero.gameObject);
-        }
+        SoundRadius = InitialRadius;
+        SoundRadius += ArmorRaduis * _hero.ActivatedArmor.Count;
+        SoundRadius += GoldRadius * _hero.Gold;
+        RippleEffect.transform.localScale = new Vector3(SoundRadius, SoundRadius, SoundRadius);
     }
 
-    private void OnTriggerExit(Collider other)
-    {
-        Monster monster = other.GetComponent<Monster>();
-        if (monster)
-        {
-            monster.OnEndHearing(_hero.gameObject);
-        }
-    }
+    //void OnDrawGizmosSelected()
+    //{
+    //    Gizmos.color = Color.red;
+    //    var start = new Vector3(transform.position.x, 0.1f, transform.position.z);
+    //    var end = new Vector3(transform.position.x + _currentRadius, 0.1f, transform.position.z);
+    //    Gizmos.DrawLine(start, end);
+    //}
 }

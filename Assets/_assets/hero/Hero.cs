@@ -22,9 +22,16 @@ public class Hero : MonoBehaviour
     public ThrowerTarget Target;
     public float ReachTime = 2f;
 
+    [Header("Attack")]
+    public float AttackCooldown = 3;
+    public GameObject AttackZone;
+
+    private float currentAttackCooldown = 0;
+
     private int _maxLife;
     private List<GameObject> unactivatedArmor;
-    private List<GameObject> activatedArmor;
+    [HideInInspector]
+    public List<GameObject> ActivatedArmor;
 
     Thrower _thrower;
 
@@ -36,33 +43,40 @@ public class Hero : MonoBehaviour
         _body = GetComponent<Rigidbody>();
         _thrower = GetComponent<Thrower>();
         Reset();
+        AttackZone.SetActive(false);
     }
 	
 	void Update ()
     {
         XDirection = Input.GetAxis("Horizontal");
         ZDirection = Input.GetAxis("Vertical");
+
+        Attack();
     }
 
     private void FixedUpdate()
     {
-        if (_movable)
+        if (_movable && (Mathf.Abs(XDirection) > 0.1f || Mathf.Abs(ZDirection) > 0.1f))
         {
+            _body.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ; 
             _body.velocity = new Vector3(XDirection * Time.deltaTime * Speed, _body.velocity.y, ZDirection * Time.deltaTime * Speed);
+            transform.eulerAngles = new Vector3(0, -Mathf.Atan2(XDirection, -ZDirection) * 180 / Mathf.PI, 0);
         }
         else
         {
             _body.velocity = Vector3.zero;
+            _body.constraints = RigidbodyConstraints.FreezeAll; 
         }
 
-        if (XDirection != 0 && ZDirection != 0)
-        {
-            transform.eulerAngles = new Vector3(0, -Mathf.Atan2(XDirection, -ZDirection) * 180 / Mathf.PI, 0);
-        }
+        //if (Mathf.Abs(XDirection) > 0.1f || Mathf.Abs(ZDirection) > 0.1f)
+        //{
+        //    transform.eulerAngles = new Vector3(0, -Mathf.Atan2(XDirection, -ZDirection) * 180 / Mathf.PI, 0);
+        //}
 
         if (!_movable)
         {
-            transform.LookAt(Target.transform.position);
+            var LootAtPosition = new Vector3(Target.transform.position.x, transform.position.y, Target.transform.position.z);
+            transform.LookAt(LootAtPosition);
         }
     }
 
@@ -77,6 +91,7 @@ public class Hero : MonoBehaviour
                 GetNewArmor();
                 break;
         }
+        OnLootChange();
     }
 
     public void GetNewArmor()
@@ -87,27 +102,30 @@ public class Hero : MonoBehaviour
 
             var obj = unactivatedArmor[Random.Range(0, unactivatedArmor.Count)];
             obj.SetActive(true);
-            activatedArmor.Add(obj);
+            ActivatedArmor.Add(obj);
             unactivatedArmor.Remove(obj);
         }
+        OnLootChange();
     }
 
-    public void ThrowArmor()
+    public void ThrowArmor(float reachtime)
     {
         if (Life > 0)
         {
             string armorname = ReceiveDamage(1);
-            _thrower.Throw(armorname);
+            _thrower.Throw(armorname, reachtime);
         }
+        OnLootChange();
     }
 
-    public void ThrowGold()
+    public void ThrowGold(float reachtime)
     {
         if (Gold > 0)
         {
             Gold--;
-            _thrower.Throw("gold");
+            _thrower.Throw("gold", reachtime);
         }
+        OnLootChange();
     }
 
 
@@ -117,6 +135,7 @@ public class Hero : MonoBehaviour
         {
             ReceiveDamage(1);
         }
+        OnLootChange();
     }
 
     public string ReceiveDamage(int value)
@@ -128,22 +147,23 @@ public class Hero : MonoBehaviour
             value--;
             Life--;
 
-            var obj = activatedArmor[Random.Range(0, activatedArmor.Count)];
+            var obj = ActivatedArmor[Random.Range(0, ActivatedArmor.Count)];
             obj.SetActive(false);
             unactivatedArmor.Add(obj);
-            activatedArmor.Remove(obj);
+            ActivatedArmor.Remove(obj);
             result = obj.name;
         }
         if (value > 0)
         {
             Death();
         }
+        OnLootChange();
         return result;
     }
 
     private void Death()
     {
-        Debug.Log("I'm dead !");
+        FindObjectOfType<LevelHandler>().Reset();
     }
 
     private void Reset()
@@ -152,7 +172,7 @@ public class Hero : MonoBehaviour
         Life = 0;
         _maxLife = Armor.Length;
         unactivatedArmor = new List<GameObject>();
-        activatedArmor = new List<GameObject>();
+        ActivatedArmor = new List<GameObject>();
         foreach (var obj in Armor)
         {
             obj.SetActive(false);
@@ -164,4 +184,19 @@ public class Hero : MonoBehaviour
     {
         _movable = movable;
     }
+
+    private void Attack()
+    {
+        if (currentAttackCooldown > 0)
+        {
+            currentAttackCooldown -= Time.deltaTime;
+        }
+        if (Input.GetButtonDown("Attack") && currentAttackCooldown <= 0)
+        {
+            currentAttackCooldown = AttackCooldown;
+
+            AttackZone.SetActive(true);
+        }
+    }
+
 }

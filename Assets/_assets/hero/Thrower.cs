@@ -8,7 +8,9 @@ public class Thrower : MonoBehaviour
     public GameObject Target;
     public GameObject Gold;
     public GameObject ThrowPoint;
-
+    public float SoundRadius;
+    public float WaveParticuleLifeTime;
+    public GameObject WaveParticuleEmiter;
     private Hero _hero;
 
     private void Start()
@@ -16,7 +18,7 @@ public class Thrower : MonoBehaviour
         _hero = GetComponent<Hero>(); ;
     }
 
-    public void Throw(string itemName)
+    public void Throw(string itemName, float reachtime)
     {
         GameObject objToThrow = null;
         
@@ -42,10 +44,13 @@ public class Thrower : MonoBehaviour
 
         objToThrow.SetActive(true);
         objToThrow.AddComponent<Rigidbody>();
-        objToThrow.AddComponent<Throwable>();
+        var throwable = objToThrow.AddComponent<Throwable>();
+        throwable.SoundRadius = SoundRadius;
+        throwable.WaveParticuleLifeTime = WaveParticuleLifeTime;
+        throwable.WaveParticuleEmiter = WaveParticuleEmiter;
         objToThrow.GetComponent<Collider>().enabled = true;
 
-        Vector3 velocity = TrajectoryMath.CalculateVelocity(objToThrow.GetComponent<Collider>().bounds.center, Target.transform.position, _hero.ReachTime);
+        Vector3 velocity = TrajectoryMath.CalculateVelocity(objToThrow.GetComponent<Collider>().bounds.center, Target.transform.position, reachtime);
 
         var objectInterface = objToThrow.GetComponent(typeof(IPropelBehavior)) as IPropelBehavior;
 

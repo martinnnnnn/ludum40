@@ -12,14 +12,15 @@ using Polycrime;
 public class ThrowerTarget : MonoBehaviour
 {
     private Hero _hero;
-    private Rigidbody _body;
+    //private Rigidbody _body;
     private LineRenderer _lr;
     private MeshRenderer _renderer;
+    private SphereCollider _collider;
     private bool _pressed;
 
     public float Speed;
     public float MaximalDistance;
-
+    public float ReachTimeMax = 3;
     private float XDirection;
     private float ZDirection;
 
@@ -28,8 +29,10 @@ public class ThrowerTarget : MonoBehaviour
         _hero = GameObject.Find("Hero").GetComponent<Hero>();
         _lr = GetComponent<LineRenderer>();
         _renderer = GetComponent<MeshRenderer>();
-        _body = GetComponent<Rigidbody>();
+        //_body = GetComponent<Rigidbody>();
+        _collider = GetComponent<SphereCollider>();
         _renderer.enabled = false;
+        _collider.enabled = false;
     }
 
     private void Update()
@@ -37,18 +40,20 @@ public class ThrowerTarget : MonoBehaviour
         XDirection = Input.GetAxis("Horizontal");
         ZDirection = Input.GetAxis("Vertical");
 
-        if (Input.GetButtonDown("Fire1"))
+        if (Input.GetButtonDown("ThrowAim"))
         {
             _renderer.enabled = true;
+            //_collider.enabled = true;
             _pressed = true;
             _hero.Movable(false);
 
             transform.position = new Vector3(_hero.transform.position.x + 10, _hero.transform.position.y, _hero.transform.position.z);
         }
 
-        if (Input.GetButtonUp("Fire1"))
+        if (Input.GetButtonUp("ThrowAim"))
         {
             _renderer.enabled = false;
+            //_collider.enabled = false;
             _pressed = false;
             _hero.Movable(true);
         }
@@ -56,17 +61,55 @@ public class ThrowerTarget : MonoBehaviour
         if (_pressed)
         {
             _lr.enabled = true;
-            Render(_hero.transform.position, transform.position, _hero.ReachTime, Color.blue);
+            float reachTime = _hero.ReachTime;
+            bool canThrow = false;
+            List<Vector3> positions = new List<Vector3>();
+
+            
+            do
+            {
+                positions = GetTrajectoryPoints(_hero.transform.position, transform.position, reachTime, Color.blue);
+
+                bool intersection = false;
+                for (int i = 0; i < positions.Count - 1; i++)
+                {
+                    var origin = positions[i];
+                    var direction = positions[i + 1] - positions[i];
+                    var maxDistance = Vector3.Distance(origin, positions[i + 1]);
+                    if (Physics.Raycast(origin, direction, maxDistance))
+                    {
+                        intersection = true;
+                        break;
+                    }
+                }
+                if (intersection)
+                {
+                    reachTime += 0.1f;
+                }
+                else
+                {
+                    canThrow = true;
+                }
+            } while (!canThrow && reachTime < ReachTimeMax);
+
+            if (!canThrow)
+            {
+                _lr.positionCount = 0;
+                return;
+            }
+
+            _lr.positionCount = positions.Count;
+            _lr.SetPositions(positions.ToArray());
             // TODO : change renderer to fx
 
             // if input then throw
-            if (Input.GetButtonDown("Fire2"))
+            if (Input.GetButtonDown("ThrowArmor"))
             {
-                _hero.ThrowArmor();
+                _hero.ThrowArmor(reachTime);
             }
-            if (Input.GetButtonDown("Fire3"))
+            if (Input.GetButtonDown("ThrowGold"))
             {
-                _hero.ThrowGold();
+                _hero.ThrowGold(reachTime);
             }
         }
         else
@@ -81,15 +124,18 @@ public class ThrowerTarget : MonoBehaviour
         {
             if ((Mathf.Abs(XDirection) > 0.2f || Mathf.Abs(ZDirection) > 0.2f))
             {
-                _body.velocity = new Vector3(XDirection * Time.deltaTime * Speed, _body.velocity.y, ZDirection * Time.deltaTime * Speed);
+                transform.position = new Vector3(
+                    transform.position.x + XDirection * Time.deltaTime * Speed,
+                    transform.position.y,
+                    transform.position.z + ZDirection * Time.deltaTime * Speed);
+                //_body.velocity = new Vector3(XDirection * Time.deltaTime * Speed, _body.velocity.y, ZDirection * Time.deltaTime * Speed);
             }
-            else
-            {
-                _body.velocity = Vector3.zero;
-            }
+            //else
+            //{
+            //    _body.velocity = Vector3.zero;
+            //}
             if (Vector3.Distance(_hero.transform.position, transform.position) >= MaximalDistance)
             {
-                Debug.Log("hello");
                 var allowedPos = transform.position - _hero.transform.position;
                 allowedPos = Vector3.ClampMagnitude(allowedPos, MaximalDistance);
                 transform.position = _hero.transform.position + allowedPos;
@@ -99,7 +145,7 @@ public class ThrowerTarget : MonoBehaviour
         }
     }
 
-    public void Render(Vector3 startPoint, Vector3 endPoint, float time, Color color)
+    public List<Vector3> GetTrajectoryPoints(Vector3 startPoint, Vector3 endPoint, float time, Color color)
     {
         Vector3 initialVelocity = TrajectoryMath.CalculateVelocity(startPoint, endPoint, time);
         float deltaTime = time / initialVelocity.magnitude;
@@ -127,8 +173,7 @@ public class ThrowerTarget : MonoBehaviour
             Debug.Log("error");
         }
         positions.Add(endPoint);
-        _lr.positionCount = positions.Count;
-        _lr.SetPositions(positions.ToArray());
+        return positions;
     }
 
    
