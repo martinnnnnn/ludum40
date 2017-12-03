@@ -32,12 +32,14 @@ public class SoundEmiter : MonoBehaviour
     {
         if (_heroBody.velocity.magnitude > 0.1f)
         {
-            if (!_particles.isPlaying) _particles.Play();
+            RippleEffect.SetActive(true);
+            //if (!_particles.isPlaying) _particles.Play();
             IsEmitingSound = true;
         }
         else
         {
-            if (_particles.isPlaying) _particles.Stop(false, ParticleSystemStopBehavior.StopEmitting);
+            RippleEffect.SetActive(false);
+            //if (_particles.isPlaying) _particles.Stop(false, ParticleSystemStopBehavior.StopEmitting);
             IsEmitingSound = false;
         }
     }

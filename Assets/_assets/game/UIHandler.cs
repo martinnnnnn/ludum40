@@ -74,6 +74,7 @@ public class UIHandler : MonoBehaviour
         Yes.gameObject.SetActive(true);
         No.gameObject.SetActive(true);
         Background.gameObject.SetActive(true);
+        Title.gameObject.SetActive(true);
 
         Yes.transform.GetChild(0).GetComponent<Text>().color = SelectedColor;
         No.transform.GetChild(0).GetComponent<Text>().color = DefaultColor;

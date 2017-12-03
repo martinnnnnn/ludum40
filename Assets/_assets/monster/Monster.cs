@@ -30,6 +30,8 @@ public class Monster : MonoBehaviour, IReset
     [Header("Sounds")]
     public float RecognitionTime = 3;
     public float HearDuration = 5f;
+    public LayerMask Hidden;
+    public LayerMask LayerShown;
 
     private float currentAttackCooldown = 0;
     private float currentRecognitionTime = 0;
@@ -41,9 +43,11 @@ public class Monster : MonoBehaviour, IReset
 
     private NavMeshAgent _agent;
 
+    
     MonsterState State;
 
 
+    
 
     void OnEnable()
     {
@@ -75,7 +79,9 @@ public class Monster : MonoBehaviour, IReset
 
         currentAttackCooldown = 0;
         currentRecognitionTime = 0;
-}
+
+
+    }
     public void HearObject(Throwable obj)
     {
         if (Vector3.Distance(obj.transform.position, transform.position) < obj.SoundRadius)
@@ -180,8 +186,17 @@ public class Monster : MonoBehaviour, IReset
         }
     }
 
+    
     private void Hear()
     {
+        if (fog)
+        {
+            if (fog.ToHide.Contains(gameObject))
+            {
+                GetComponent<Renderer>().enabled = true;
+                fog.ToHide.Remove(gameObject);
+            }
+        }
         if (!_agent.pathPending)
         {
             if (_agent.remainingDistance <= _agent.stoppingDistance)
@@ -197,6 +212,14 @@ public class Monster : MonoBehaviour, IReset
 
     private void BackToPatrol()
     {
+        if (fog)
+        {
+            if (!fog.ToHide.Contains(gameObject))
+            {
+                GetComponent<Renderer>().enabled = false;
+                fog.ToHide.Add(gameObject);
+            }
+        }
         _agent.isStopped = false;
         if (PatrolPoints.Length == 0)
         {
@@ -211,6 +234,8 @@ public class Monster : MonoBehaviour, IReset
 
     private void FollowHero()
     {
+        gameObject.layer = LayerShown;
+        
         _agent.destination = _hero.transform.position;
 
         if (currentAttackCooldown > 0)

@@ -4,8 +4,8 @@ using UnityEngine;
 
 public class FogOfWar : MonoBehaviour, IReset
 {
-
-    private List<GameObject> ToHide;
+    [HideInInspector]
+    public List<GameObject> ToHide;
     public Material Fog;
     public float FogAlpha;
 
@@ -25,7 +25,7 @@ public class FogOfWar : MonoBehaviour, IReset
         ToHide = new List<GameObject>();
         foreach (Transform t in transform)
         {
-            if (GetComponent<Loot>() || GetComponent<Monster>())
+            if (t.GetComponent<Loot>() || t.GetComponent<Monster>())
             {
                 ToHide.Add(t.gameObject);
                 t.GetComponent<Renderer>().enabled = false;
@@ -47,17 +47,25 @@ public class FogOfWar : MonoBehaviour, IReset
 
         show = !show;
 
-        foreach (GameObject obj in ToHide)
-        {
-            obj.GetComponent<Renderer>().enabled = show;
-        }
+
 
         if (show)
         {
+            foreach (GameObject obj in ToHide)
+            {
+                if (obj.GetComponent<Collider>().enabled)
+                {
+                    obj.GetComponent<Renderer>().enabled = true;
+                }
+            }
             Fog.color = new Color(Fog.color.r, Fog.color.g, Fog.color.b, 0);
         }
         else
         {
+            foreach (GameObject obj in ToHide)
+            {
+                obj.GetComponent<Renderer>().enabled = false;
+            }
             Fog.color = new Color(Fog.color.r, Fog.color.g, Fog.color.b, FogAlpha / 255f);
         }
     }

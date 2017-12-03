@@ -3,19 +3,14 @@ using System.Collections.Generic;
 using UnityEngine;
 using Polycrime;
 
-// TODO : Sound managment
-// TODO : fog of war
-// TODO : monster attack
-// TODO : hero attack
-// TODO : throw gold
 
 public class ThrowerTarget : MonoBehaviour
 {
     private Hero _hero;
     //private Rigidbody _body;
     private LineRenderer _lr;
-    private MeshRenderer _renderer;
-    private SphereCollider _collider;
+    //private MeshRenderer _renderer;
+    //private SphereCollider _collider;
     private bool _pressed;
 
     public float Speed;
@@ -24,15 +19,14 @@ public class ThrowerTarget : MonoBehaviour
     private float XDirection;
     private float ZDirection;
 
+    private GameObject Ripple;
+
     private void Start()
     {
         _hero = GameObject.Find("Hero").GetComponent<Hero>();
         _lr = GetComponent<LineRenderer>();
-        _renderer = GetComponent<MeshRenderer>();
-        //_body = GetComponent<Rigidbody>();
-        _collider = GetComponent<SphereCollider>();
-        _renderer.enabled = false;
-        _collider.enabled = false;
+        Ripple = transform.GetChild(0).gameObject;
+        Ripple.SetActive(false);
     }
 
     private void Update()
@@ -46,42 +40,17 @@ public class ThrowerTarget : MonoBehaviour
 
         if (Input.GetAxis("ThrowAim") > 0.1f && !_pressed)
         {
-            _renderer.enabled = true;
-            //_collider.enabled = true;
             _pressed = true;
             _hero.Movable(false);
-
+            Ripple.SetActive(true);
             transform.position = new Vector3(_hero.transform.position.x + MaximalDistance / 2, _hero.transform.position.y, _hero.transform.position.z);
         }
         else if (Input.GetAxis("ThrowAim") <= 0.1f && _pressed)
         {
-            _renderer.enabled = false;
-            //_collider.enabled = false;
+            Ripple.SetActive(false);
             _pressed = false;
             _hero.Movable(true);
         }
-
-        //if (Input.GetButtonDown("ThrowAim"))
-        //{
-        //    _renderer.enabled = true;
-        //    //_collider.enabled = true;
-        //    _pressed = true;
-        //    _hero.Movable(false);
-
-        //    transform.position = new Vector3(_hero.transform.position.x + 10, _hero.transform.position.y, _hero.transform.position.z);
-        //}
-
-        //if (Input.GetButtonUp("ThrowAim"))
-        //{
-        //    _renderer.enabled = false;
-        //    //_collider.enabled = false;
-        //    _pressed = false;
-        //    _hero.Movable(true);
-        //}
-
-        
-
-
 
         if (_pressed)
         {
@@ -125,9 +94,7 @@ public class ThrowerTarget : MonoBehaviour
 
             _lr.positionCount = positions.Count;
             _lr.SetPositions(positions.ToArray());
-            // TODO : change renderer to fx
 
-            // if input then throw
             if (Input.GetButtonDown("ThrowArmor"))
             {
                 _hero.ThrowArmor(reachTime);
@@ -149,7 +116,6 @@ public class ThrowerTarget : MonoBehaviour
         {
             if ((Mathf.Abs(XDirection) > 0.2f || Mathf.Abs(ZDirection) > 0.2f))
             {
-                Debug.Log("fixed : " + XDirection + " / " + ZDirection);
                 transform.position = new Vector3(
                     transform.position.x + XDirection * Time.deltaTime * Speed,
                     transform.position.y,
@@ -173,8 +139,7 @@ public class ThrowerTarget : MonoBehaviour
         Vector3 previousPosition = currentPosition;
         Gizmos.color = color;
 
-        List<Vector3> positions = new List<Vector3>();
-        positions.Add(startPoint);
+        List<Vector3> positions = new List<Vector3>{ startPoint };
 
         if (IsParabolicVelocity(initialVelocity))
         {
