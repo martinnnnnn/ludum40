@@ -37,26 +37,51 @@ public class ThrowerTarget : MonoBehaviour
 
     private void Update()
     {
+        if (_hero._dead)
+            return;
+
         XDirection = Input.GetAxis("Horizontal");
         ZDirection = Input.GetAxis("Vertical");
 
-        if (Input.GetButtonDown("ThrowAim"))
+
+        if (Input.GetAxis("ThrowAim") > 0.1f && !_pressed)
         {
             _renderer.enabled = true;
             //_collider.enabled = true;
             _pressed = true;
             _hero.Movable(false);
 
-            transform.position = new Vector3(_hero.transform.position.x + 10, _hero.transform.position.y, _hero.transform.position.z);
+            transform.position = new Vector3(_hero.transform.position.x + MaximalDistance / 2, _hero.transform.position.y, _hero.transform.position.z);
         }
-
-        if (Input.GetButtonUp("ThrowAim"))
+        else if (Input.GetAxis("ThrowAim") <= 0.1f && _pressed)
         {
             _renderer.enabled = false;
             //_collider.enabled = false;
             _pressed = false;
             _hero.Movable(true);
         }
+
+        //if (Input.GetButtonDown("ThrowAim"))
+        //{
+        //    _renderer.enabled = true;
+        //    //_collider.enabled = true;
+        //    _pressed = true;
+        //    _hero.Movable(false);
+
+        //    transform.position = new Vector3(_hero.transform.position.x + 10, _hero.transform.position.y, _hero.transform.position.z);
+        //}
+
+        //if (Input.GetButtonUp("ThrowAim"))
+        //{
+        //    _renderer.enabled = false;
+        //    //_collider.enabled = false;
+        //    _pressed = false;
+        //    _hero.Movable(true);
+        //}
+
+        
+
+
 
         if (_pressed)
         {
@@ -124,23 +149,17 @@ public class ThrowerTarget : MonoBehaviour
         {
             if ((Mathf.Abs(XDirection) > 0.2f || Mathf.Abs(ZDirection) > 0.2f))
             {
+                Debug.Log("fixed : " + XDirection + " / " + ZDirection);
                 transform.position = new Vector3(
                     transform.position.x + XDirection * Time.deltaTime * Speed,
                     transform.position.y,
                     transform.position.z + ZDirection * Time.deltaTime * Speed);
-                //_body.velocity = new Vector3(XDirection * Time.deltaTime * Speed, _body.velocity.y, ZDirection * Time.deltaTime * Speed);
             }
-            //else
-            //{
-            //    _body.velocity = Vector3.zero;
-            //}
             if (Vector3.Distance(_hero.transform.position, transform.position) >= MaximalDistance)
             {
                 var allowedPos = transform.position - _hero.transform.position;
                 allowedPos = Vector3.ClampMagnitude(allowedPos, MaximalDistance);
                 transform.position = _hero.transform.position + allowedPos;
-
-                //transform.position = transform.position - _hero.transform.position;
             }
         }
     }

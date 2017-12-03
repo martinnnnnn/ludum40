@@ -13,22 +13,22 @@ public enum MonsterState
     FOLLOW
 }
 
-public class Monster : MonoBehaviour {
+public class Monster : MonoBehaviour, IReset
+{
 
-
+    [Header("Patrol")]
     public Vector3[] PatrolPoints;
 
-    private int currentPathPoint;
-    private Vector3 _startingPosition;
-
-    private NavMeshAgent _agent;
-
-
-    public float RecognitionTime = 3;
+    [Header("Attack")]
     public float DistanceToAttack = 2;
     public float AttackCooldown = 2;
     public GameObject AttackZone;
 
+    [Header("Life")]
+    public int Life = 3;
+
+    [Header("Sounds")]
+    public float RecognitionTime = 3;
     public float HearDuration = 5f;
 
     private float currentAttackCooldown = 0;
@@ -36,31 +36,29 @@ public class Monster : MonoBehaviour {
     private Hero _hero;
     private SoundEmiter _emiter;
 
+    private int currentPathPoint;
+    private Vector3 _startingPosition;
+
+    private NavMeshAgent _agent;
+
     MonsterState State;
+
+
 
     void OnEnable()
     {
         _startingPosition = transform.position;
-        _agent = GetComponent<NavMeshAgent>();
-        AttackZone.SetActive(false);
-        currentPathPoint = -1;
+        Reset();
 
-        State = MonsterState.IDLE;
-        if (PatrolPoints.Length > 0)
-        {
-            State = MonsterState.PATROL;
-        }
-
-        AttackZone.GetComponent<AttackZone>().OnAttackEnd += StartFollowAfterAttack;
-        GetComponent<MeshRenderer>().material.color = Color.blue;
-        _hero = FindObjectOfType<LevelHandler>().Hero;
-        if (_hero) _emiter = _hero.GetComponentInChildren<SoundEmiter>();
     }
-
-    private void Start()
+    
+    public void Reset()
     {
-        _startingPosition = transform.position;
+        GetComponent<Renderer>().enabled = true;
+        GetComponent<Collider>().enabled = true;
+        transform.position = _startingPosition;
         _agent = GetComponent<NavMeshAgent>();
+        _agent.isStopped = false;
         AttackZone.SetActive(false);
         currentPathPoint = -1;
 
@@ -72,10 +70,12 @@ public class Monster : MonoBehaviour {
 
         AttackZone.GetComponent<AttackZone>().OnAttackEnd += StartFollowAfterAttack;
         GetComponent<MeshRenderer>().material.color = Color.blue;
-        _hero = FindObjectOfType<LevelHandler>().Hero;
-        _emiter = _hero.GetComponentInChildren<SoundEmiter>();
-    }
+        _hero = FindObjectOfType<Hero>();
+        if (_hero) _emiter = _hero.GetComponentInChildren<SoundEmiter>();
 
+        currentAttackCooldown = 0;
+        currentRecognitionTime = 0;
+}
     public void HearObject(Throwable obj)
     {
         if (Vector3.Distance(obj.transform.position, transform.position) < obj.SoundRadius)
@@ -87,6 +87,12 @@ public class Monster : MonoBehaviour {
 
     void Update()
     {
+        if (_hero._dead)
+        {
+            _agent.isStopped = true;
+            return;
+        }
+
         ListenHero();
         switch (State)
         {
@@ -230,5 +236,16 @@ public class Monster : MonoBehaviour {
     private void StartFollowAfterAttack()
     {
         _agent.isStopped = false;
+    }
+
+    public void ReceiveDamage(int value)
+    {
+        Life -= value;
+        if (Life <= 0)
+        {
+            GetComponent<Renderer>().enabled = false;
+            GetComponent<Collider>().enabled = false;
+            //gameObject.SetActive(false);
+        }
     }
 }

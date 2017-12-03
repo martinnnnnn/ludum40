@@ -11,7 +11,7 @@ public enum LootType
 
 
 
-public class Loot : MonoBehaviour
+public class Loot : MonoBehaviour, IReset
 {
 
 
@@ -28,13 +28,20 @@ public class Loot : MonoBehaviour
 		
 	}
 
+    public void Reset()
+    {
+        GetComponent<Renderer>().enabled = true;
+        GetComponent<Collider>().enabled = true;
+    }
+
     private void OnTriggerEnter(Collider other)
     {
         Hero hero = other.GetComponent<Hero>();
         if (hero)
         {
             hero.ReceiveLoot(this);
-            gameObject.SetActive(false);
+            GetComponent<Renderer>().enabled = false;
+            GetComponent<Collider>().enabled = false;
         }
     }
 }

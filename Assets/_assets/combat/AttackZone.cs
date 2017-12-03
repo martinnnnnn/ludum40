@@ -9,6 +9,7 @@ public class AttackZone : MonoBehaviour
     public float AttackDuration = 1f;
     private float currentAttackDuration;
 
+    public bool IsHero;
 
     public System.Action OnAttackEnd;
 
@@ -28,12 +29,23 @@ public class AttackZone : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-
-        Hero hero = other.GetComponent<Hero>();
-        if (hero)
+        if (!IsHero)
         {
-            AttackEnd();
-            hero.ReceiveDamage(Damage);
+            Hero hero = other.GetComponent<Hero>();
+            if (hero)
+            {
+                AttackEnd();
+                hero.ReceiveDamage(Damage);
+            }
+        }
+        else
+        {
+            Monster monster = other.GetComponent<Monster>();
+            if (monster)
+            {
+                AttackEnd();
+                monster.ReceiveDamage(Damage);
+            }
         }
     }
 

@@ -33,7 +33,7 @@ public class Throwable : MonoBehaviour, IPropelBehavior
             Destroy(wave, WaveParticuleLifeTime);
 
             // sound emission
-            foreach (var monster in FindObjectOfType<LevelHandler>().Monsters)
+            foreach (var monster in FindObjectsOfType<Monster>())
             {
                 if (monster.gameObject.activeSelf)
                 {

@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Hero : MonoBehaviour
+public class Hero : MonoBehaviour, IReset
 {
     [Header("Movement")]
     public float Speed;
@@ -37,17 +37,44 @@ public class Hero : MonoBehaviour
 
     public System.Action OnLootChange;
 
+    [HideInInspector]
+    public bool _dead;
+
+    private Vector3 _startingPosition;
+
 	void Start ()
     {
+        _startingPosition = transform.position;
         _movable = true;
         _body = GetComponent<Rigidbody>();
         _thrower = GetComponent<Thrower>();
         Reset();
         AttackZone.SetActive(false);
     }
-	
-	void Update ()
+
+    public void Reset()
     {
+        _dead = false;
+        transform.position = _startingPosition;
+        _body.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
+        Gold = 0;
+        Life = 0;
+        _maxLife = Armor.Length;
+        unactivatedArmor = new List<GameObject>();
+        ActivatedArmor = new List<GameObject>();
+        foreach (var obj in Armor)
+        {
+            obj.SetActive(false);
+            unactivatedArmor.Add(obj);
+        }
+    }
+
+    void Update ()
+    {
+        if (_dead)
+        {
+            return;
+        }
         XDirection = Input.GetAxis("Horizontal");
         ZDirection = Input.GetAxis("Vertical");
 
@@ -163,22 +190,13 @@ public class Hero : MonoBehaviour
 
     private void Death()
     {
-        FindObjectOfType<LevelHandler>().Reset();
+        _dead = true;
+        _body.velocity = Vector3.zero;
+        _body.constraints = RigidbodyConstraints.FreezeAll;
+        FindObjectOfType<UIHandler>().ShowUI();
     }
 
-    private void Reset()
-    {
-        Gold = 0;
-        Life = 0;
-        _maxLife = Armor.Length;
-        unactivatedArmor = new List<GameObject>();
-        ActivatedArmor = new List<GameObject>();
-        foreach (var obj in Armor)
-        {
-            obj.SetActive(false);
-            unactivatedArmor.Add(obj);
-        }
-    }
+
 
     public void Movable(bool movable)
     {

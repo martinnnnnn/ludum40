@@ -2,10 +2,10 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class FogOfWar : MonoBehaviour
+public class FogOfWar : MonoBehaviour, IReset
 {
 
-    public GameObject[] ToHide;
+    private List<GameObject> ToHide;
     public Material Fog;
     public float FogAlpha;
 
@@ -14,11 +14,22 @@ public class FogOfWar : MonoBehaviour
 
     private void Start()
     {
+        Reset();
+    }
+
+    public void Reset()
+    {
         show = false;
-        Fog.color = new Color(Fog.color.r, Fog.color.g, Fog.color.b, FogAlpha);
-        foreach (GameObject obj in ToHide)
+        Fog.color = new Color(Fog.color.r, Fog.color.g, Fog.color.b, FogAlpha / 255f);
+
+        ToHide = new List<GameObject>();
+        foreach (Transform t in transform)
         {
-            obj.GetComponent<Renderer>().enabled = show;
+            if (GetComponent<Loot>() || GetComponent<Monster>())
+            {
+                ToHide.Add(t.gameObject);
+                t.GetComponent<Renderer>().enabled = false;
+            }
         }
     }
 
@@ -28,10 +39,6 @@ public class FogOfWar : MonoBehaviour
         UpdateFog(other);
     }
 
-    private void OnTriggerExit(Collider other)
-    {
-        UpdateFog(other);
-    }
 
     void UpdateFog(Collider other)
     {
@@ -51,7 +58,7 @@ public class FogOfWar : MonoBehaviour
         }
         else
         {
-            Fog.color = new Color(Fog.color.r, Fog.color.g, Fog.color.b, FogAlpha);
+            Fog.color = new Color(Fog.color.r, Fog.color.g, Fog.color.b, FogAlpha / 255f);
         }
     }
 }
