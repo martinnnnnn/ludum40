@@ -30,8 +30,6 @@ public class Monster : MonoBehaviour, IReset
     [Header("Sounds")]
     public float RecognitionTime = 3;
     public float HearDuration = 5f;
-    public LayerMask Hidden;
-    public LayerMask LayerShown;
 
     private float currentAttackCooldown = 0;
     private float currentRecognitionTime = 0;
@@ -43,7 +41,10 @@ public class Monster : MonoBehaviour, IReset
 
     private NavMeshAgent _agent;
 
-    
+    private FogCoverable _fog;
+    private Renderer _renderer;
+
+
     MonsterState State;
 
 
@@ -80,7 +81,9 @@ public class Monster : MonoBehaviour, IReset
         currentAttackCooldown = 0;
         currentRecognitionTime = 0;
 
-
+        _fog = GetComponent<FogCoverable>();
+        _renderer = GetComponent<Renderer>();
+        _fog.enabled = true;
     }
     public void HearObject(Throwable obj)
     {
@@ -186,23 +189,23 @@ public class Monster : MonoBehaviour, IReset
         }
     }
 
-    
+    bool heared = false;
     private void Hear()
     {
-        if (fog)
-        {
-            if (fog.ToHide.Contains(gameObject))
-            {
-                GetComponent<Renderer>().enabled = true;
-                fog.ToHide.Remove(gameObject);
-            }
-        }
+        if (heared)
+            return;
+
+        Destroy(gameObject.GetComponent<FogCoverable>());
+        //_fog.enabled = false;
+        _renderer.enabled = true;
+
         if (!_agent.pathPending)
         {
             if (_agent.remainingDistance <= _agent.stoppingDistance)
             {
                 if (!_agent.hasPath || _agent.velocity.sqrMagnitude == 0f)
                 {
+                    heared = true;
                     _agent.isStopped = true;
                     Invoke("BackToPatrol", HearDuration);
                 }
@@ -212,14 +215,10 @@ public class Monster : MonoBehaviour, IReset
 
     private void BackToPatrol()
     {
-        if (fog)
-        {
-            if (!fog.ToHide.Contains(gameObject))
-            {
-                GetComponent<Renderer>().enabled = false;
-                fog.ToHide.Add(gameObject);
-            }
-        }
+        heared = false;
+        //_fog.enabled = true;
+        gameObject.AddComponent<FogCoverable>();
+
         _agent.isStopped = false;
         if (PatrolPoints.Length == 0)
         {
@@ -234,8 +233,9 @@ public class Monster : MonoBehaviour, IReset
 
     private void FollowHero()
     {
-        gameObject.layer = LayerShown;
-        
+        _fog.enabled = false;
+        _renderer.enabled = true;
+
         _agent.destination = _hero.transform.position;
 
         if (currentAttackCooldown > 0)

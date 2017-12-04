@@ -176,6 +176,12 @@ MonoBehaviour:
   Life: 3
   RecognitionTime: 1
   HearDuration: 5
+  MaskHidden:
+    serializedVersion: 2
+    m_Bits: 256
+  MaskShown:
+    serializedVersion: 2
+    m_Bits: 1
 --- !u!114 &114275943398763214
 MonoBehaviour:
   m_ObjectHideFlags: 1
