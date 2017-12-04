@@ -25,7 +25,7 @@ public class Thrower : MonoBehaviour
 
         if (itemName == "gold")
         {
-            objToThrow = Instantiate(Gold);
+            objToThrow = Instantiate(Gold, ThrowPoint.transform.position, new Quaternion());
         }
         else
         {

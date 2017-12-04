@@ -23,6 +23,7 @@ public class AttackZone : MonoBehaviour
         currentAttackDuration += Time.deltaTime;
         if (currentAttackDuration >= AttackDuration)
         {
+            FindObjectOfType<SoundHandler>().PlaySound("attack_miss");
             AttackEnd();
         }
     }

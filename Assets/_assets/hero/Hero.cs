@@ -43,12 +43,16 @@ public class Hero : MonoBehaviour, IReset
 
     private Vector3 _startingPosition;
 
-	void Start ()
+    public SoundHandler _soundHandler;
+
+
+    void Start ()
     {
         _startingPosition = transform.position;
         _movable = true;
         _body = GetComponent<Rigidbody>();
         _thrower = GetComponent<Thrower>();
+        _soundHandler = FindObjectOfType<SoundHandler>();
         Reset();
         AttackZone.SetActive(false);
     }
@@ -60,6 +64,8 @@ public class Hero : MonoBehaviour, IReset
         _body.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
         Gold = 0;
         Life = 0;
+        if (OnLifeChange != null) OnLifeChange.Invoke();
+        if (OnLootChange != null) OnLootChange.Invoke();
         _maxLife = Armor.Length;
         unactivatedArmor = new List<GameObject>();
         ActivatedArmor = new List<GameObject>();
@@ -113,6 +119,7 @@ public class Hero : MonoBehaviour, IReset
         switch(loot.Type)
         {
             case LootType.GOLD:
+                _soundHandler.PlaySound("gold_pickup");
                 Gold += loot.Value;
                 break;
             case LootType.ARMOR:
@@ -127,14 +134,14 @@ public class Hero : MonoBehaviour, IReset
         if (Life < _maxLife)
         {
             Life++;
-
+            PlayWalkSound();
             var obj = unactivatedArmor[Random.Range(0, unactivatedArmor.Count)];
             obj.SetActive(true);
             ActivatedArmor.Add(obj);
             unactivatedArmor.Remove(obj);
         }
         OnLootChange();
-        OnLifeChange();
+        if (OnLifeChange != null) OnLifeChange.Invoke();
     }
 
     public void ThrowArmor(float reachtime)
@@ -162,17 +169,19 @@ public class Hero : MonoBehaviour, IReset
     {
         if (Life > 0)
         {
-            ReceiveDamage(1);
+            ReceiveDamage(1, true);
         }
         OnLootChange();
     }
 
-    public string ReceiveDamage(int value)
+    public string ReceiveDamage(int value, bool playsound = false)
     {
         string result = "";
 
         while (Life > 0 && value > 0)
         {
+            if (playsound) _soundHandler.PlayFromPool(SoundType.MONSTER_ATTACK_ARMOR);
+
             value--;
             Life--;
 
@@ -187,7 +196,7 @@ public class Hero : MonoBehaviour, IReset
             Death();
         }
         OnLootChange();
-        OnLifeChange();
+        if(OnLifeChange != null)  OnLifeChange.Invoke();
         return result;
     }
 
@@ -220,4 +229,15 @@ public class Hero : MonoBehaviour, IReset
         }
     }
 
+    void PlayWalkSound()
+    {
+        if (Life == 0)
+        {
+            _soundHandler.PlayFromPool(SoundType.WALK_LIGHT);
+        }
+        else
+        {
+            _soundHandler.PlayFromPool(SoundType.WALK_ARMOR);
+        }
+    }
 }

@@ -25,14 +25,11 @@ public class Throwable : MonoBehaviour, IPropelBehavior
     {
         if (collision.gameObject.tag == "Ground")
         {
-            // particule emission
-            // sound wave emission
             var spawnPosition = new Vector3(transform.position.x, 0.40f, transform.position.z);
             GameObject wave = Instantiate(WaveParticuleEmiter, spawnPosition, WaveParticuleEmiter.transform.rotation) as GameObject;
             wave.transform.localScale = new Vector3(SoundRadius, SoundRadius, SoundRadius);
             Destroy(wave, WaveParticuleLifeTime);
 
-            // sound emission
             foreach (var monster in FindObjectsOfType<Monster>())
             {
                 if (monster.gameObject.activeSelf)
@@ -40,8 +37,14 @@ public class Throwable : MonoBehaviour, IPropelBehavior
                     monster.GetComponent<Monster>().HearObject(this);
                 }
             }
-
-            // destroy self
+            if (gameObject.tag == "Gold")
+            {
+                FindObjectOfType<SoundHandler>().PlaySound("gold_falling");
+            }
+            else
+            {
+                FindObjectOfType<SoundHandler>().PlaySound("armor_sound");
+            }
             Destroy(gameObject);
         }
     }

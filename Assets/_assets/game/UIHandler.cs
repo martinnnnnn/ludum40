@@ -20,8 +20,11 @@ public class UIHandler : MonoBehaviour
     public Image Shield3;
     public Image Shield4;
 
+    public Text GoldValue;
+
     bool yesSelected;
     float currentCooldown;
+    Hero _hero;
 
     private void Start()
     {
@@ -36,7 +39,9 @@ public class UIHandler : MonoBehaviour
         Shield3.gameObject.SetActive(false);
         Shield4.gameObject.SetActive(false);
 
-        FindObjectOfType<Hero>().OnLifeChange += SetArmors;
+        _hero = FindObjectOfType<Hero>();
+        _hero.OnLifeChange += SetArmors;
+        _hero.OnLootChange += UpdateGoalValue;
     }
 
     private void Update()
@@ -133,5 +138,10 @@ public class UIHandler : MonoBehaviour
     public void OnNoButton()
     {
         Application.Quit();
+    }
+
+    public void UpdateGoalValue()
+    {
+        GoldValue.text = _hero.Gold.ToString();
     }
 }

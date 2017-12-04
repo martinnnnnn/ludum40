@@ -12,7 +12,7 @@ public class SoundEmiter : MonoBehaviour
 
     public GameObject RippleEffect;
     private ParticleSystem _particles;
-
+    private float _defaultRelation;
     private Hero _hero;
     private Rigidbody _heroBody;
 
@@ -26,6 +26,8 @@ public class SoundEmiter : MonoBehaviour
         _particles = RippleEffect.GetComponent<ParticleSystem>();
         SoundRadius = InitialRadius;
         RippleEffect.transform.localScale = new Vector3(SoundRadius, SoundRadius, SoundRadius);
+
+        _defaultRelation = _particles.sizeOverLifetime.size.constantMax / SoundRadius;
     }
 
     private void Update()
@@ -50,13 +52,19 @@ public class SoundEmiter : MonoBehaviour
         SoundRadius += ArmorRaduis * _hero.ActivatedArmor.Count;
         SoundRadius += GoldRadius * _hero.Gold;
         RippleEffect.transform.localScale = new Vector3(SoundRadius, SoundRadius, SoundRadius);
+        var size = _particles.sizeOverLifetime.size;
+        size.constantMax = _defaultRelation * SoundRadius;
     }
 
-    //void OnDrawGizmosSelected()
-    //{
-    //    Gizmos.color = Color.red;
-    //    var start = new Vector3(transform.position.x, 0.1f, transform.position.z);
-    //    var end = new Vector3(transform.position.x + _currentRadius, 0.1f, transform.position.z);
-    //    Gizmos.DrawLine(start, end);
-    //}
+    public bool ShowDebug;
+    void OnDrawGizmosSelected()
+    {
+        if (ShowDebug)
+        {
+            Gizmos.color = Color.red;
+            var start = new Vector3(transform.position.x, 0.1f, transform.position.z);
+            var end = new Vector3(transform.position.x + SoundRadius, 0.1f, transform.position.z);
+            Gizmos.DrawLine(start, end);
+        }
+    }
 }

@@ -152,10 +152,6 @@ public class ThrowerTarget : MonoBehaviour
                 previousPosition = currentPosition;
             }
         }
-        else
-        {
-            Debug.Log("error");
-        }
         positions.Add(endPoint);
         return positions;
     }

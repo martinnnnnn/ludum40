@@ -40,8 +40,6 @@ public class Monster : MonoBehaviour, IReset
     private Vector3 _startingPosition;
 
     private NavMeshAgent _agent;
-
-    private FogCoverable _fog;
     private Renderer _renderer;
 
 
@@ -80,10 +78,11 @@ public class Monster : MonoBehaviour, IReset
 
         currentAttackCooldown = 0;
         currentRecognitionTime = 0;
-
-        _fog = GetComponent<FogCoverable>();
+        if (!GetComponent<FogCoverable>())
+        {
+            gameObject.AddComponent<FogCoverable>();
+        }
         _renderer = GetComponent<Renderer>();
-        _fog.enabled = true;
     }
     public void HearObject(Throwable obj)
     {
@@ -196,7 +195,6 @@ public class Monster : MonoBehaviour, IReset
             return;
 
         Destroy(gameObject.GetComponent<FogCoverable>());
-        //_fog.enabled = false;
         _renderer.enabled = true;
 
         if (!_agent.pathPending)
@@ -216,7 +214,6 @@ public class Monster : MonoBehaviour, IReset
     private void BackToPatrol()
     {
         heared = false;
-        //_fog.enabled = true;
         gameObject.AddComponent<FogCoverable>();
 
         _agent.isStopped = false;
@@ -233,7 +230,7 @@ public class Monster : MonoBehaviour, IReset
 
     private void FollowHero()
     {
-        _fog.enabled = false;
+        Destroy(gameObject.GetComponent<FogCoverable>());
         _renderer.enabled = true;
 
         _agent.destination = _hero.transform.position;
@@ -265,6 +262,8 @@ public class Monster : MonoBehaviour, IReset
 
     public void ReceiveDamage(int value)
     {
+        FindObjectOfType<SoundHandler>().PlaySound("attack_success");
+
         Life -= value;
         if (Life <= 0)
         {
