@@ -36,6 +36,7 @@ public class Hero : MonoBehaviour, IReset
     Thrower _thrower;
 
     public System.Action OnLootChange;
+    public System.Action OnLifeChange;
 
     [HideInInspector]
     public bool _dead;
@@ -133,6 +134,7 @@ public class Hero : MonoBehaviour, IReset
             unactivatedArmor.Remove(obj);
         }
         OnLootChange();
+        OnLifeChange();
     }
 
     public void ThrowArmor(float reachtime)
@@ -185,6 +187,7 @@ public class Hero : MonoBehaviour, IReset
             Death();
         }
         OnLootChange();
+        OnLifeChange();
         return result;
     }
 
