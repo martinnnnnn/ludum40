@@ -106,6 +106,7 @@ public class UIHandler : MonoBehaviour
         Background.gameObject.SetActive(false);
         Title.gameObject.SetActive(false);
         FindObjectOfType<LevelHandler>().Reset();
+        _hero._animator.SetTrigger("alive");
     }
 
 

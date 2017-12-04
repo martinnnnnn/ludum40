@@ -43,8 +43,11 @@ public class Hero : MonoBehaviour, IReset
 
     private Vector3 _startingPosition;
 
+    [HideInInspector]
     public SoundHandler _soundHandler;
 
+    [HideInInspector]
+    public Animator _animator;
 
     void Start ()
     {
@@ -53,6 +56,7 @@ public class Hero : MonoBehaviour, IReset
         _body = GetComponent<Rigidbody>();
         _thrower = GetComponent<Thrower>();
         _soundHandler = FindObjectOfType<SoundHandler>();
+        _animator = GetComponentInChildren<Animator>();
         Reset();
         AttackZone.SetActive(false);
     }
@@ -60,6 +64,7 @@ public class Hero : MonoBehaviour, IReset
     public void Reset()
     {
         _dead = false;
+        _body.isKinematic = false;
         transform.position = _startingPosition;
         _body.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
         Gold = 0;
@@ -94,10 +99,12 @@ public class Hero : MonoBehaviour, IReset
         {
             _body.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ; 
             _body.velocity = new Vector3(XDirection * Time.deltaTime * Speed, _body.velocity.y, ZDirection * Time.deltaTime * Speed);
-            transform.eulerAngles = new Vector3(0, -Mathf.Atan2(XDirection, -ZDirection) * 180 / Mathf.PI, 0);
+            transform.eulerAngles = new Vector3(0, -Mathf.Atan2(-XDirection, ZDirection) * 180 / Mathf.PI, 0);
+            _animator.SetFloat("speed",1);
         }
         else
         {
+            _animator.SetFloat("speed", 0);
             _body.velocity = Vector3.zero;
             _body.constraints = RigidbodyConstraints.FreezeAll; 
         }
@@ -109,6 +116,7 @@ public class Hero : MonoBehaviour, IReset
 
         if (!_movable)
         {
+            _animator.SetFloat("speed", 0);
             var LootAtPosition = new Vector3(Target.transform.position.x, transform.position.y, Target.transform.position.z);
             transform.LookAt(LootAtPosition);
         }
@@ -134,7 +142,7 @@ public class Hero : MonoBehaviour, IReset
         if (Life < _maxLife)
         {
             Life++;
-            PlayWalkSound();
+            _soundHandler.PlayFromPool(SoundType.WALK_ARMOR);
             var obj = unactivatedArmor[Random.Range(0, unactivatedArmor.Count)];
             obj.SetActive(true);
             ActivatedArmor.Add(obj);
@@ -150,6 +158,7 @@ public class Hero : MonoBehaviour, IReset
         {
             string armorname = ReceiveDamage(1);
             _thrower.Throw(armorname, reachtime);
+            _animator.SetTrigger("attack");
         }
         OnLootChange();
     }
@@ -159,6 +168,7 @@ public class Hero : MonoBehaviour, IReset
         if (Gold > 0)
         {
             Gold--;
+            _animator.SetTrigger("attack");
             _thrower.Throw("gold", reachtime);
         }
         OnLootChange();
@@ -181,6 +191,7 @@ public class Hero : MonoBehaviour, IReset
         while (Life > 0 && value > 0)
         {
             if (playsound) _soundHandler.PlayFromPool(SoundType.MONSTER_ATTACK_ARMOR);
+            if (playsound) _animator.SetTrigger("damage");
 
             value--;
             Life--;
@@ -202,8 +213,10 @@ public class Hero : MonoBehaviour, IReset
 
     private void Death()
     {
+        _animator.SetTrigger("death");
         _dead = true;
         _body.velocity = Vector3.zero;
+        _body.isKinematic = true;
         _body.constraints = RigidbodyConstraints.FreezeAll;
         FindObjectOfType<UIHandler>().ShowUI();
     }
@@ -226,18 +239,8 @@ public class Hero : MonoBehaviour, IReset
             currentAttackCooldown = AttackCooldown;
 
             AttackZone.SetActive(true);
+            _animator.SetTrigger("attack");
         }
     }
 
-    void PlayWalkSound()
-    {
-        if (Life == 0)
-        {
-            _soundHandler.PlayFromPool(SoundType.WALK_LIGHT);
-        }
-        else
-        {
-            _soundHandler.PlayFromPool(SoundType.WALK_ARMOR);
-        }
-    }
 }
